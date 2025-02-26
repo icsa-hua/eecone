@@ -7,7 +7,7 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, message="'H' is deprecated and will be removed in a future version, please use 'h' instead.")
 
 
-st.set_page_config(page_title="EECONE", page_icon="app/static/eecone_icon.png", layout="wide")
+st.set_page_config(page_title="EECONE", page_icon="static/eecone_icon.png", layout="wide")
 apply_css(sidebar_width=420)
 reports: dict[str, EeconeReport] = {
     # '🔍 Data Preview': DataPreviewReport(),
@@ -51,7 +51,7 @@ def main():
 
 
 def get_dummy_data():
-    df = pd.read_csv("app/data/dummy_data.csv", delimiter=",")
+    df = pd.read_csv("data/dummy_data.csv", delimiter=",")
     df.convert_dtypes()
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['target'] = df['mill_kw']
