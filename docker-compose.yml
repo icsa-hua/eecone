@@ -3,8 +3,8 @@ version: "1.0"
 services:
     rto_ui:
         tty: true
-        image: rto_v2:latest
-        container_name: rto_ui_rm3
+        image: eecone:latest
+        container_name: eecone_ui
         restart: always
         entrypoint: /bin/bash
         command: -c "streamlit run main.py"
@@ -13,8 +13,8 @@ services:
             - debug_mode=false
             - TZ=Europe/Athens
         volumes:
-            - "D:/RTO/app:/app"
-        working_dir: "/app/rtx_ui"
+            - "D:/eecone/app:/app"
+        working_dir: "/app/eecone_ui"
         ports:
             - "12460:8501"
         deploy:
