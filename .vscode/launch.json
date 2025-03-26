@@ -8,9 +8,9 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             // Remove the "externalConsole" property
-            // "program": "${file}",
-            "module": "streamlit",
-            "args": ["run", "${file}"],
+            "program": "${file}",
+            // "module": "streamlit",
+            // "args": ["run", "${file}"],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}",
             }

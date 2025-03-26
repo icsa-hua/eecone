@@ -3,11 +3,3 @@ showSidebarNavigation = true
 
 [server]
 enableStaticServing = true
-
-[theme]
-primaryColor = "#036FB7"
-backgroundColor = "#C7DEB5"
-
-# eecone_green : #2EAA53, 
-# eecone_light_green: #C7DEB5
-# eecone_blue: #036FB7
