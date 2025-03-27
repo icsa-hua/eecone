@@ -1,0 +1,33 @@
+from pathlib import Path
+import numpy as np
+import cv2
+from datetime import datetime
+from rosbags.highlevel import AnyReader
+from rosbags.typesys import Stores, get_typestore
+
+bagpath = Path('C:/Users/k.chiotis/Downloads/rosbag2_burning_car_1')
+
+# Create a type store to use if the bag has no message definitions.
+typestore = get_typestore(Stores.ROS2_FOXY)
+
+topics = ['/sensing/camera/front/resize'] #, '/sensing/camera/thermal/image_color_max_range', '/sensing/camera/thermal/image_color']
+
+# Create reader instance and open for reading.
+
+with AnyReader([bagpath], default_typestore=typestore) as reader:
+    connections = [x for x in reader.connections if x.topic in topics]
+    for connection, timestamp, rawdata in reader.messages(connections=connections):
+        msg = reader.deserialize(rawdata, connection.msgtype)
+        # Extract image data
+        frame_id = msg.header.frame_id
+        dt = datetime.fromtimestamp(timestamp / 1e9)
+        print(f"Received image from {frame_id} at {dt}")
+        height = msg.height
+        width = msg.width
+        encoding = msg.encoding
+        data = np.array(msg.data, dtype=np.uint8).reshape((height, width, 3))  # Assuming RGB8 encoding
+        
+        # Display the image
+        cv2.imshow(f"Image from {frame_id} at {dt}", data)
+        # cv2.waitKey(0)  # Wait for a key press to close the window
+        cv2.destroyAllWindows()
