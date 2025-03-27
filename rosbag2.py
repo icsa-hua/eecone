@@ -29,5 +29,5 @@ with AnyReader([bagpath], default_typestore=typestore) as reader:
         
         # Display the image
         cv2.imshow(f"Image from {frame_id} at {dt}", data)
-        # cv2.waitKey(0)  # Wait for a key press to close the window
+        cv2.waitKey(0)  # Wait for a key press to close the window
         cv2.destroyAllWindows()
