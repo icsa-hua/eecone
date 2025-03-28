@@ -8,12 +8,17 @@ warnings.filterwarnings("ignore", category=FutureWarning, message="'H' is deprec
 
 st.set_page_config(page_title="Drift Detection", page_icon="static/icsa_logo.png", layout="wide")
 apply_css(sidebar_width=440)
-reports: dict[str, Report] = {
-    '🔍 Data Preview': DataPreviewReport(),
-    '📊 Data Quality': DataQualityReport(),
-    '👁️ Data Drift': DataDriftReport(),
-    '🎯 Target Drift': TargetDriftReport(),
-    '⏳ Lifetime Exploration': LifetimeExplorationReport(),
+
+_DATA_TYPE_SETTINGS = {
+    "Tabular": {
+        "file_uploader_settings": {"accept_multiple_files": False, "type": ["csv"]}
+    },
+    "Image": {
+        "file_uploader_settings": {"accept_multiple_files": True, "type": ["png"]}
+    },
+    "Text": {
+        "file_uploader_settings": {"accept_multiple_files": False, "type": ["txt"]}
+    }
 }
 
 
@@ -26,15 +31,16 @@ def main():
         title.markdown("<h1>Intelligent Computer Systems & Applications Drift Detection</h1>", unsafe_allow_html=True)
         st.divider()
         
-        with st.form("my_form"):
-            explore_item = st.selectbox('Report', list(reports.keys()))
-            ref_data = st.file_uploader("Reference Data")
-            cur_data = st.file_uploader("Current Data")
-            submitted = st.form_submit_button("Create Report")
+        data_type = st.radio("Data Type", ["Tabular", "Image", "Text"], horizontal=True)
+        refe_data = st.file_uploader("Reference Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
+        test_data = st.file_uploader("Test Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
 
-    if submitted:
-        with st.spinner("Wait for it...", show_time=True):
-            reports[explore_item].create_report(ref_data, cur_data)
+    if refe_data and test_data:
+        pass
+    if not refe_data:
+        st.warning("Please upload reference data.", icon="🚨")
+    if not test_data:
+        st.warning("Please upload test data.", icon="🚨")
 
     print("Done!")
 
