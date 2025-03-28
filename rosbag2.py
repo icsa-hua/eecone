@@ -5,14 +5,14 @@ from datetime import datetime
 from rosbags.highlevel import AnyReader
 from rosbags.typesys import Stores, get_typestore
 
-bagpath = Path('C:/Users/k.chiotis/Downloads/rosbag2_2023_09_25-17_15_00')
+bagpath = Path('data/rosbag2_burning_car_2')
 # C:/Users/k.chiotis/Downloads/rosbag2_2023_09_25-17_15_00
 # C:/Users/k.chiotis/Downloads/rosbag2_burning_car_1
 
 # Create a type store to use if the bag has no message definitions.
 typestore = get_typestore(Stores.ROS2_FOXY)
 
-topics = ['/radar_visualization_markers']
+topics = ['/sensing/camera/thermal/image_color']
 
 # Create reader instance and open for reading.
 with AnyReader([bagpath], default_typestore=typestore) as reader:
@@ -35,8 +35,8 @@ with AnyReader([bagpath], default_typestore=typestore) as reader:
             continue
         
         # save the image as a file
-        # image_path = f"C:/Users/k.chiotis/OneDrive - Titan Cement Company SA/Desktop/rosbag images/big file/thermal_image_color_max_range/{dt}_{frame_id}_image.png"
-        # cv2.imwrite(image_path, data)
+        image_path = f"data/thermal_ironbow/{dt}_{frame_id}_image.png"
+        cv2.imwrite(image_path, data)
 
         # Display the image
         # cv2.imshow(f"Image from {frame_id} at {dt}", data)
