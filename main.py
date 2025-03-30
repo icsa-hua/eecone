@@ -40,16 +40,28 @@ def main():
         data_ref = st.file_uploader("Reference Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
         data_test = st.file_uploader("Test Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
 
-    if data_ref and data_test:
-        with st.spinner("Operation in progress. Please wait."):
-            report: Report = _DATA_TYPE_SETTINGS[data_type]["report"](data_ref, data_test)            
-            report.generate_report()
-    if not data_ref:
-        st.warning("Please upload reference data.", icon="🚨")
-    if not data_test:
-        st.warning("Please upload test data.", icon="🚨")
+        drift_method_placeholder = st.empty()
+        dt_features_placeholder = st.empty()
+
+    report = init_report(data_type, data_ref, data_test)
+    if report:
+        report.generate_streamlit_report(drift_method_placeholder, dt_features_placeholder)
 
     print("Done!")
+
+
+# @st.cache_resource
+def init_report(data_type, data_ref, data_test) -> Report:
+    if data_ref and data_test:
+        print("Initializing report...")
+        return _DATA_TYPE_SETTINGS[data_type]["report"](data_ref, data_test)
+    if not data_ref:
+        print("Please upload reference data to initialize report.")
+        st.warning("Please upload reference data.", icon="🚨")
+    if not data_test:
+        print("Please upload test data to initialize report.")
+        st.warning("Please upload test data.", icon="🚨")
+
 
 
 if __name__ == "__main__":
