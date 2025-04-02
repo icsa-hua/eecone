@@ -17,23 +17,32 @@ class TabularDriftReport(Report):
     PD_CATEGORICAL_KEYS = ["category", "object", "string"]
     PD_DATETIME_KEYS = ["datetime"]
     
-    def __init__(self, refe_data, test_data, dt_columns=None):
-        self.df_ref = pd.read_csv(refe_data)
-        self.df_ref = self.df_ref.convert_dtypes()
-        self.df_test = pd.read_csv(test_data)
+    def __init__(self, refe_data, test_data, dt_columns=None, cat_columns=None):
+        if not isinstance(refe_data, pd.DataFrame):
+            self.df_ref = pd.read_csv(refe_data)
+        else:
+            self.df_ref = refe_data
+        if not isinstance(test_data, pd.DataFrame):
+            self.df_test = pd.read_csv(test_data)
+        else:
+            self.df_test = test_data
+        self.df_ref = self.df_ref.convert_dtypes()       
         self.df_test = self.df_test.convert_dtypes()
         self.schema = self.df_test.dtypes
         self.common_features = self.df_ref.columns.intersection(self.df_test.columns)
         self.common_features = [col for col in self.common_features if self.df_ref[col].dtype == self.df_test[col].dtype]
-        if dt_columns:
-            self.cast_dt_columns(dt_columns)
+        self.dt_columns = dt_columns
+        self.cat_columns = cat_columns
+        if dt_columns: self.cast_dt_columns(dt_columns)        
+        if cat_columns: self.cast_cat_columns(cat_columns)
     
 
     def detect_drift(self, method="Statistical", threshold=0.05):
         if method == "Statistical":
             categorical_features = self.df_ref.select_dtypes(include=self.PD_CATEGORICAL_KEYS).columns
-            # categories_per_feature = {col: None for col in categorical_features}
-            categories_per_feature = {col: self.df_ref[col].nunique() for col in categorical_features}
+            categorical_indeces = [self.df_ref.columns.get_loc(col) for col in categorical_features]
+            categories_per_feature = {col_idx: None for col_idx in categorical_indeces}
+            # categories_per_feature = {col_idx: self.df_ref[col].nunique() for col_idx in categorical_indeces}
             X_ref = self.df_ref[self.common_features].to_numpy()
             X_test = self.df_test[self.common_features].to_numpy()
             drift_detector = TabularDrift(X_ref, p_val=.05, categories_per_feature=categories_per_feature)
@@ -48,26 +57,32 @@ class TabularDriftReport(Report):
             self.df_test[col] = pd.to_datetime(self.df_test[col])
 
 
-    def compare_dataframes(self):
+    def cast_cat_columns(self, cat_columns):
+        for col in cat_columns:
+            self.df_ref[col] = self.df_ref[col].astype("category")
+            self.df_test[col] = self.df_test[col].astype("category")
+
+
+    def df_overall_comparison(self):
         ref_summary = self.summarize_dataframe(self.df_ref)
         test_summary = self.summarize_dataframe(self.df_test)
 
         return pd.DataFrame([ref_summary, test_summary], index=["Reference", "Test"]).T
     
 
-    def compare_feature_stats(self, feature_name):
+    def df_feature_comparison(self, feature_name):
         ref_stats = self.df_ref[feature_name].describe()
         test_stats = self.df_test[feature_name].describe()
 
         return pd.DataFrame([ref_stats, test_stats], index=["Reference", "Test"]).T
     
 
-    def compare_hist_distibutions(self, feature_name, is_cumulative=False):
+    def plot_hist_distibutions(self, feature_name, is_cumulative=False, barmode='overlay'):
         fig = go.Figure()
         fig.add_trace(go.Histogram(x=self.df_ref[feature_name], name='Reference', opacity=0.5, cumulative_enabled=is_cumulative))
         fig.add_trace(go.Histogram(x=self.df_test[feature_name], name='Test', opacity=0.5, cumulative_enabled=is_cumulative))
         fig.update_layout(
-            barmode='overlay',
+            barmode=barmode,
             height=300,
             margin=dict(t=0, b=0, l=0, r=0),
             legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
@@ -76,7 +91,7 @@ class TabularDriftReport(Report):
         return fig
     
 
-    def compare_ecdf_distributions(self, feature_name):
+    def plot_ecdf_distributions(self, feature_name):
         # Calculate ECDF for reference data
         x_ref = np.sort(self.df_ref[feature_name])
         y_ref = np.arange(1, len(x_ref)+1) / len(x_ref)        
@@ -114,21 +129,32 @@ class TabularDriftReport(Report):
         return fig
 
 
-    def generate_streamlit_report(self, drift_method_placeholder, dt_features_placeholder):
+    def generate_streamlit_report(self, *args):
+            drift_method_placeholder, dt_features_placeholder, cat_features_placeholder = args
             import streamlit as st
 
             with drift_method_placeholder:
                 drift_method = st.selectbox("Drift Detection Method", ["Statistical", "MMD"], index=0)
 
             with dt_features_placeholder:
-                dt_features = st.multiselect('Datetime features', self.common_features)
-                self.cast_dt_columns(dt_features)
+                if self.dt_columns is not None:
+                    dt_features = st.multiselect('Datetime features', self.dt_columns, self.dt_columns, disabled=True)
+                else:
+                    dt_features = st.multiselect('Datetime features', self.common_features)
+                    self.cast_dt_columns(dt_features)
+
+            with cat_features_placeholder:
+                if self.cat_columns is not None:
+                    cat_features = st.multiselect('Categorical features', self.cat_columns, self.cat_columns, disabled=True)
+                else:
+                    cat_features = st.multiselect('Categorical features', self.common_features)
+                    self.cast_cat_columns(cat_features)
                         
             st.markdown("<h2 style='text-align: center; margin-bottom: 20px;'>Tabular Drift Detection Report</h2>", unsafe_allow_html=True)
 
             with st.spinner("Wait for it...", show_time=True):
                 result = self.detect_drift(method=drift_method)
-                overall_comparison = self.compare_dataframes()
+                df_overall_comparison = self.df_overall_comparison()
 
             st_col1, st_col2 = st.columns([0.2, 0.8])
             with st_col1:
@@ -141,7 +167,7 @@ class TabularDriftReport(Report):
                 st.markdown(styled_df, unsafe_allow_html=True)
 
             with st_col2:                                
-                st.dataframe(overall_comparison)
+                st.dataframe(df_overall_comparison)
             st.divider()
 
             for idx, df_col in enumerate(self.common_features):
@@ -160,16 +186,17 @@ class TabularDriftReport(Report):
                     st.markdown(styled_df, unsafe_allow_html=True)
 
                 with st_col2:
-                    feature_comparison = self.compare_feature_stats(df_col)
-                    st.dataframe(feature_comparison)
+                    st.dataframe(self.df_feature_comparison(df_col))
                     
                 with st_col3:
                     if self.get_simplified_type(self.df_test, df_col) == "Numerical":
                         tab_hist, tab_ecdf = st.tabs(["Histogram", "ECDF"])
                         with tab_hist:
-                            st.plotly_chart(self.compare_hist_distibutions(df_col), config={'displayModeBar': False}, use_container_width=True)
+                            st.plotly_chart(self.plot_hist_distibutions(df_col), config={'displayModeBar': False}, use_container_width=True)
                         with tab_ecdf:
-                            st.plotly_chart(self.compare_ecdf_distributions(df_col), config={'displayModeBar': False}, use_container_width=True)
+                            st.plotly_chart(self.plot_ecdf_distributions(df_col), config={'displayModeBar': False}, use_container_width=True)
+                    elif self.get_simplified_type(self.df_test, df_col) == "Categorical":
+                        st.plotly_chart(self.plot_hist_distibutions(df_col, barmode='group'), config={'displayModeBar': False}, use_container_width=True)
                         
 
                 st.divider()

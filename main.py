@@ -1,10 +1,13 @@
 import streamlit as st
+from importlib import import_module
 from drift_reports.tabular_drift_report import TabularDriftReport
 from drift_reports.image_drift_report import ImageDriftReport
 from drift_reports.text_drift_report import TextDriftReport
 from drift_reports.base_drift_report import Report
 from static.styles import apply_css
 import warnings
+
+from use_case import Usecase
 warnings.filterwarnings("ignore", category=FutureWarning, message="'H' is deprecated and will be removed in a future version, please use 'h' instead.")
 
 
@@ -36,16 +39,26 @@ def main():
         title.markdown("<h1>Intelligent Computer Systems & Applications Drift Detection</h1>", unsafe_allow_html=True)
         st.divider()
         
-        data_type = st.radio("Data Type", ["Tabular", "Image", "Text"], horizontal=True)
-        data_ref = st.file_uploader("Reference Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
-        data_test = st.file_uploader("Test Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
+        use_case = st.selectbox("Use Case", ["Custom", "Eecone", "IncomePrediction", "Archimedes"], index=0)
+        if use_case == "Custom":
+            data_type = st.radio("Data Type", ["Tabular", "Image", "Text"], horizontal=True)
+            data_ref = st.file_uploader("Reference Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
+            data_test = st.file_uploader("Test Data", **_DATA_TYPE_SETTINGS[data_type]["file_uploader_settings"])
 
         drift_method_placeholder = st.empty()
         dt_features_placeholder = st.empty()
+        cat_features_placeholder = st.empty()
+        ref_slider_placeholder = st.empty()
+        test_slider_placeholder = st.empty()
 
-    report = init_report(data_type, data_ref, data_test)
+    if use_case == "Custom":
+        report = init_report(data_type, data_ref, data_test)
+    else:
+        module = import_module("use_case")
+        use_case_class: Usecase = getattr(module, f'{use_case}Case')()
+        report = use_case_class.get_report(ref_slider_placeholder, test_slider_placeholder)
     if report:
-        report.generate_streamlit_report(drift_method_placeholder, dt_features_placeholder)
+        report.generate_streamlit_report(drift_method_placeholder, dt_features_placeholder, cat_features_placeholder)
 
     print("Done!")
 

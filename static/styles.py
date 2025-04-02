@@ -15,8 +15,8 @@ def apply_css(sidebar_width=450):
             }}
             [data-testid="stSidebarUserContent"] {{
                 padding-top: 0.4rem;
-                padding-right: 1.9rem;
-                padding-left: 0.5rem;
+                padding-right: 1.5rem;
+                padding-left: 1.5rem;
                 padding-bottom: 2rem;
             }}
             [data-testid="stSidebar"] {{
